@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 export interface Notification {
   id: number;
@@ -17,21 +17,24 @@ export interface Ticket {
 }
 
 export interface User {
-  id: string;
-  nickname: string;
+  name: string;
   email: string;
+  phone: string;
+  password?: string;
   profileImage: string | null;
   verified: boolean;
-  studentId?: string;
-  major?: string;
   notifications: Notification[];
   tickets: Ticket[];
 }
 
 interface UserContextType {
   user: User | null;
+
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
+
   updateUser: (data: Partial<User>) => void;
-  sendNotification: (targetUserId: string, message: string) => void;
+  sendNotification: (targetEmail: string, message: string) => void;
   addTicket: (ticket: Ticket) => void;
 
   unreadCount: number;
@@ -42,42 +45,55 @@ const UserContext = createContext<UserContextType | null>(null);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  // ⭐ 로컬스토리지에서 초기 유저 로드 (새로고침 유지)
+  // ⭐ 새로고침 로그인 유지
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
-    else {
-      // 초기 유저 (임시)
-      const defaultUser: User = {
-        id: "user123",
-        nickname: "닉네임",
-        email: "minswim2002@gmail.com",
-        profileImage: null,
-        verified: true,
-        studentId: "20213416",
-        major: "컴퓨터공학부",
-        notifications: [],
-        tickets: [],
-      };
-      setUser(defaultUser);
-    }
+    const savedUser = localStorage.getItem("currentUser");
+    if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
-  // ⭐ User 변경 시 로컬스토리지 자동 저장
   useEffect(() => {
-    if (user) localStorage.setItem("user", JSON.stringify(user));
+    if (user) localStorage.setItem("currentUser", JSON.stringify(user));
+    else localStorage.removeItem("currentUser");
   }, [user]);
 
-  const updateUser = (data: Partial<User>) => {
-    if (!user) return;
-    setUser((prev) => ({ ...prev!, ...data }));
+  // 🔥 로그인 (회원가입 유저 검증)
+  const login = (email: string, password: string) => {
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+    const foundUser = users.find(
+      (u: User) => u.email === email && u.password === password
+    );
+
+    if (!foundUser) return false;
+
+    setUser(foundUser);
+    return true;
   };
 
-  // 🔥 특정 유저에게 알림 보내기 (백엔드 연동 READY)
-  const sendNotification = (targetUserId: string, message: string) => {
-    // 지금은 "내가 targetUserId라면 나에게만 적용"
+  // 🔥 로그아웃
+  const logout = () => {
+    setUser(null);
+  };
+
+  // 🔧 사용자 정보 업데이트
+  const updateUser = (data: Partial<User>) => {
     if (!user) return;
-    if (user.id !== targetUserId) return;
+
+    const updatedUser = { ...user, ...data };
+    setUser(updatedUser);
+
+    // users 리스트도 업데이트
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const updatedUsers = users.map((u: User) =>
+      u.email === user.email ? updatedUser : u
+    );
+
+    localStorage.setItem("users", JSON.stringify(updatedUsers));
+  };
+
+  // 🔔 알림 추가
+  const sendNotification = (targetEmail: string, message: string) => {
+    if (!user || user.email !== targetEmail) return;
 
     const newNotification: Notification = {
       id: Date.now(),
@@ -86,28 +102,29 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       read: false,
     };
 
-    setUser((prev) => ({
-      ...prev!,
-      notifications: [newNotification, ...(prev?.notifications ?? [])],
-    }));
+    updateUser({
+      notifications: [newNotification, ...(user.notifications || [])],
+    });
   };
 
-  // 🎟 예매 티켓 추가
+  // 🎫 티켓 추가
   const addTicket = (ticket: Ticket) => {
     if (!user) return;
-    setUser((prev) => ({
-      ...prev!,
-      tickets: [...(prev?.tickets ?? []), ticket],
-    }));
+
+    updateUser({
+      tickets: [...(user.tickets || []), ticket],
+    });
   };
 
-  // 🔔 읽지 않은 알림 수
-  const unreadCount = user?.notifications?.filter((n) => !n.read).length ?? 0;
+  const unreadCount =
+    user?.notifications?.filter((n) => !n.read).length ?? 0;
 
   return (
     <UserContext.Provider
       value={{
         user,
+        login,
+        logout,
         updateUser,
         sendNotification,
         addTicket,
@@ -120,7 +137,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useUser() {
-  const context = useContext(UserContext);
-  if (!context) throw new Error("useUser must be used within UserProvider");
-  return context;
+  const ctx = useContext(UserContext);
+  if (!ctx) throw new Error("useUser must be used within UserProvider");
+  return ctx;
 }
