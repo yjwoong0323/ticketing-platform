@@ -31,20 +31,36 @@ ALTER TABLE free_boards AUTO_INCREMENT = 1;
 ALTER TABLE board_comments AUTO_INCREMENT = 1;
 
 -- users insert
+-- ⚠️ 중요: 비밀번호는 BCrypt로 암호화되어야 합니다.
+-- 애플리케이션 실행 시 PasswordHashGenerator가 해시를 출력하므로,
+-- 출력된 해시를 아래 password_hash 값에 복사하세요.
+-- 
+-- 예시:
+-- 비밀번호 '9874'의 해시: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- 비밀번호 '1234'의 해시: $2a$10$rBV2.je2UqB8qJ8Z8Z8Z8eIjZAgcfl7p92ldGxad68LJZdL17lhWy
+--
+-- 실제 해시 생성 방법:
+-- 1. 애플리케이션 실행: ./gradlew bootRun
+-- 2. 콘솔에서 BCrypt 해시 확인
+-- 3. 아래 password_hash 값을 실제 해시로 변경
+
 INSERT INTO users
 (name, password_hash, email, phone, student_no, enrolled_student, status)
 VALUES
 ('이재웅', '9874', 'yjwoong0323@gmail.com', '010-6298-3040', '20223764', 0, 1);
+-- ⚠️ 위 '9874'를 BCrypt 해시로 변경 필요
 
 INSERT INTO users
 (name, password_hash, email, phone, student_no, enrolled_student, status)
 VALUES
 ('조민서', '1234', 'msms@gmail.com', '010-1111-3333', '20211111', 0, 1);
+-- ⚠️ 위 '1234'를 BCrypt 해시로 변경 필요
 
 INSERT INTO users
 (name, password_hash, email, phone, student_no, enrolled_student, status)
 VALUES
 ('송종욱', '1234', 'sjw@gmail.com', '010-1111-2222', '20210000', 0, 1);
+-- ⚠️ 위 '1234'를 BCrypt 해시로 변경 필요
 
 -- roles insert
 INSERT INTO roles(name) VALUES('관리자');
