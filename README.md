@@ -1,6 +1,9 @@
-# Interpark in Univ
+# Ticket Reservation Platform
 
-[Capstone] 분산되어있는 교내 공연 및 전시회 통합 관리 시스템 개발
+교내 공연 및 전시회 광고, 조회, 예매 서비스를 구현한 웹 기반 티켓팅 플랫폼
+실제 서비스 흐름을 중심으로 Backend와 협업 구조에 집중
+
+본 프로젝트는 학부 캡스톤 디자인 과제로 진행 됨
 
 <br/>
 <br/>
